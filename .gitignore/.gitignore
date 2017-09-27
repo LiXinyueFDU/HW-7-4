@@ -1,0 +1,68 @@
+# clear variables and close windows
+
+rm(list = ls(all = TRUE))
+graphics.off()
+
+
+# Paramters for the general Ito process
+dt        = 0.0001                             # delta t, determines the length of the step size
+c         = 1                                  # constant c
+start_val = 1                                  # defines the starting value
+a         = 5
+u         = 1
+b         = 0.2
+set.seed(0)                                    # regulates that random numbers do not change with repeated executions of the code
+
+mu = function(S,t) {
+  mu  = a*(u-S)                                # define the functional form of mu
+  return(mu)
+}
+
+mu1 = function(S,t) {
+  mu1  = (2*a*(u-exp(S))-b^2)/(2*exp(S))                              # define the functional form of mu
+  return(mu1)
+}
+
+sigma = function(S,t) {
+  sigma  = b*sqrt(S)                                 # define the functional form of sigma
+  return(sigma)
+}
+
+sigma1 = function(S,t) {
+  sigma1  = b/sqrt(exp(S))                                 # define the functional form of sigma
+  return(sigma1)
+}
+
+# calculation of related basic parameters
+n    = floor(1/dt)                              
+t    = seq(0, n, by = dt) 
+
+# calculation of the Wiener process
+w    = matrix(runif(n), n, 1)                   # defines a vector w which contains values randomly choosen greater or smaller than zero
+w    = 2 * (w > 0.5) - 1                        # rescales the vector w to -1 or 1
+dx   = c * sqrt(dt)                             # defines the scaling factor dx
+dw   = w * dx                                   # gives the increments of a Wiener process
+
+# calculation of the general Ito process
+S    = matrix(0, n, 1)                          # defines an vector s of length n containing zeros
+S[1] = start_val                                # defines the staring value
+G    = matrix(0, n, 1)
+G[1] = log(start_val)  
+
+for (i in 2:dim(dw)[1]) {
+  G[i]  = mu1(G[i-1],t[i-1])*dt + sigma1(G[i-1],t[i-1])*dw[i] + G[i-1]
+}
+
+# plotting to a file
+png("SFEItoProcess.png", width = 675, height = 600) 
+par(mar=c(5.1, 4.1, 4.1, 10.1), xpd=TRUE)
+cols  = c("white", "white")
+ax    = c(seq(0, 1, by = 0.25))
+matplot(G, lwd = 2, type = "l", lty = 1, ylim = c(min(G), max(G)), col = "blue", main = "General Ito Process", 
+        xlab = "Time t", ylab = "Values of the general Ito process", xaxt="n")
+axis(side=1, at = seq(0,n, by = n/4), labels = ax)
+legend("topright", inset = c(-0.3,0), legend=c(paste("dt = ", dt, sep=""),paste("c  = ", c, sep=""),
+                                               paste("alpha = ", a, sep=""),paste("mu = ", u, sep=""),
+                                               paste("sigma = ", b, sep=""),
+                                               paste("G_0 = ",start_val , sep="")), col = cols,lty=0, ncol=1,cex=1.3,bty="o",lwd=0)
+dev.off()
